@@ -27,9 +27,7 @@
   </div>
 
 <script>
-/* -----------------------
-   설정
-   ----------------------- */
+/* ----------------------- 설정 ----------------------- */
 const CANVAS = document.getElementById('c');
 const ctx = CANVAS.getContext('2d');
 const WIDTH = CANVAS.width, HEIGHT = CANVAS.height;
@@ -39,9 +37,7 @@ const SPRITE_SIZE = 26;
 const INITIAL_COUNT = { "가위":20, "바위":20, "보":20 };
 const IMAGE_FILES = { "가위":"scissors.png", "바위":"rock.png", "보":"paper.png" };
 
-/* -----------------------
-   유틸: 이미지 로드 + 색칠(tint) + 마스크 생성
-   ----------------------- */
+/* ----------------------- 유틸: 이미지 로드 + 색칠(tint) + 마스크 생성 ----------------------- */
 function loadImage(src){ return new Promise((res, rej)=>{
   const img = new Image();
   img.onload = ()=>res(img);
@@ -72,16 +68,12 @@ function makeMask(canvas){
   return {mask, w, h};
 }
 
-/* -----------------------
-   시뮬 데이터
-   ----------------------- */
+/* ----------------------- 시뮬 데이터 ----------------------- */
 const COLORS = { "가위": 'rgb(255,100,100)', "바위": 'rgb(100,255,100)', "보": 'rgb(100,100,255)' };
 let IMAGES_CANVAS = {}; 
 let MASKS = {};         
 
-/* -----------------------
-   Piece 클래스
-   ----------------------- */
+/* ----------------------- Piece 클래스 ----------------------- */
 class Piece {
   constructor(kind){
     this.kind = kind;
@@ -112,9 +104,7 @@ class Piece {
   }
 }
 
-/* -----------------------
-   충돌
-   ----------------------- */
+/* ----------------------- 충돌 ----------------------- */
 function circleTest(a,b){
   const dx = a.x - b.x, dy = a.y - b.y;
   const dist2 = dx*dx + dy*dy;
@@ -141,9 +131,7 @@ function pixelOverlap(a,b){
   return false;
 }
 
-/* -----------------------
-   fight 규칙
-   ----------------------- */
+/* ----------------------- fight 규칙 ----------------------- */
 function fight(a,b){
   if(a.kind === b.kind) return;
   const aWins = (a.kind === "가위" && b.kind === "보") ||
@@ -154,9 +142,7 @@ function fight(a,b){
   a.updateImage(); b.updateImage();
 }
 
-/* -----------------------
-   리소스 로드 및 초기화
-   ----------------------- */
+/* ----------------------- 리소스 로드 및 초기화 ----------------------- */
 async function init(){
   const loaded = {};
   for(const k of Object.keys(IMAGE_FILES)){
@@ -176,9 +162,7 @@ async function init(){
   return pieces;
 }
 
-/* -----------------------
-   메인 루프
-   ----------------------- */
+/* ----------------------- 메인 루프 ----------------------- */
 let pieces = [];
 let running = true;
 let winnerDisplayed = false;
@@ -226,9 +210,7 @@ function render(){
   for(const p of pieces) p.draw(ctx);
 }
 
-/* -----------------------
-   승리 표시 + 다시하기 버튼
-   ----------------------- */
+/* ----------------------- 승리 표시 + 다시하기 버튼 ----------------------- */
 function showWinner(kind){
   winnerDisplayed = true;
   running = false;
