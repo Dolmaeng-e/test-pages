@@ -20,7 +20,7 @@
 <body>
   <div class="wrap">
     <h1>가위바위보 시뮬레이션</h1>
-    <canvas id="c" width="900" height="700"></canvas>
+    <canvas id="c" width="1000" height="750"></canvas>
     <div id="winnerContainer">
       <button id="restartBtn">다시하기</button>
     </div>
@@ -34,7 +34,7 @@ const WIDTH = CANVAS.width, HEIGHT = CANVAS.height;
 const FPS = 30;
 const BG = [200,185,225]; 
 const SPRITE_SIZE = 26;   
-const INITIAL_COUNT = { "가위":20, "바위":20, "보":20 };
+const INITIAL_COUNT = { "가위":30, "바위":30, "보":30 };
 const IMAGE_FILES = { "가위":"scissors.png", "바위":"rock.png", "보":"paper.png" };
 
 /* ----------------------- 유틸: 이미지 로드 + 색칠(tint) + 마스크 생성 ----------------------- */
@@ -79,8 +79,8 @@ class Piece {
     this.kind = kind;
     this.x = Math.random()*(WIDTH-40)+20;
     this.y = Math.random()*(HEIGHT-40)+20;
-    this.dx = [ -4, -2, 2, 4 ][Math.floor(Math.random()*4)];
-    this.dy = [ -4, -2, 2, 4 ][Math.floor(Math.random()*4)];
+    this.dx = [ -4, 0, 4, 8, 12 ][Math.floor(Math.random()*5)];
+    this.dy = [ -4, 0, 4, 8, 12 ][Math.floor(Math.random()*5)];
     this.updateImage();
   }
   updateImage(){
