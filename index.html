@@ -6,42 +6,45 @@
 <title>가위바위보 시뮬레이션</title>
 <style>
   html,body { height:100%; margin:0; font-family: "Malgun Gothic","Apple SD Gothic Neo","Nanum Gothic", sans-serif; background:#f5f5f5; }
-  .wrap { display:flex; flex-direction:column; align-items:center; padding:12px; }
+  .wrap { position:relative; display:flex; flex-direction:column; align-items:center; padding:12px; }
   h1 { margin:6px 0 12px; font-size:20px; color:#222; }
   canvas { background: rgb(200,185,225); border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
-  .hint { margin-top:10px; color:#333; font-size:13px; }
-  #winnerContainer { margin-top:12px; display:none; text-align:center; }
-  #restartBtn {
-    font-size:16px; padding:6px 12px; border:none; border-radius:4px;
+  #winnerBtn {
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    font-size:20px; padding:10px 20px;
+    border:none; border-radius:6px;
     background:#556BFF; color:white; cursor:pointer;
+    display:none; z-index:10;
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>가위바위보 시뮬레이션</h1>
-    <canvas id="c" width="900" height="700"></canvas>
-    <div id="winnerContainer">
-      <button id="restartBtn">다시하기</button>
-    </div>
-  </div>
+<div class="wrap">
+  <h1>가위바위보 시뮬레이션</h1>
+  <canvas id="c" width="900" height="700"></canvas>
+  <button id="winnerBtn">다시하기</button>
+</div>
 
 <script>
 /* -----------------------
    설정
-   ----------------------- */
+----------------------- */
 const CANVAS = document.getElementById('c');
 const ctx = CANVAS.getContext('2d');
 const WIDTH = CANVAS.width, HEIGHT = CANVAS.height;
 const FPS = 30;
-const BG = [200,185,225]; 
-const SPRITE_SIZE = 26;   
-const INITIAL_COUNT = { "가위":20, "바위":20, "보":20 };
+const BG = [200,185,225]; // 배경색
+const SPRITE_SIZE = 35;   // 조각 크기
+const INITIAL_COUNT = { "가위":5, "바위":5, "보":5 };
+
+/* 이미지 파일 경로 (같은 폴더) */
 const IMAGE_FILES = { "가위":"scissors.png", "바위":"rock.png", "보":"paper.png" };
 
 /* -----------------------
    유틸: 이미지 로드 + 색칠(tint) + 마스크 생성
-   ----------------------- */
+----------------------- */
 function loadImage(src){ return new Promise((res, rej)=>{
   const img = new Image();
   img.onload = ()=>res(img);
@@ -49,6 +52,7 @@ function loadImage(src){ return new Promise((res, rej)=>{
   img.src = src;
 });}
 
+// tint: 이미지 알파 보존하면서 색으로 채우기
 function tintImage(img, colorStr, size){
   const oc = document.createElement('canvas');
   oc.width = size; oc.height = size;
@@ -62,6 +66,7 @@ function tintImage(img, colorStr, size){
   return oc;
 }
 
+// mask: Uint8Array of 0/1 by pixel alpha threshold
 function makeMask(canvas){
   const w = canvas.width, h = canvas.height;
   const data = canvas.getContext('2d').getImageData(0,0,w,h).data;
@@ -74,14 +79,14 @@ function makeMask(canvas){
 
 /* -----------------------
    시뮬 데이터
-   ----------------------- */
+----------------------- */
 const COLORS = { "가위": 'rgb(255,100,100)', "바위": 'rgb(100,255,100)', "보": 'rgb(100,100,255)' };
 let IMAGES_CANVAS = {}; 
 let MASKS = {};         
 
 /* -----------------------
    Piece 클래스
-   ----------------------- */
+----------------------- */
 class Piece {
   constructor(kind){
     this.kind = kind;
@@ -113,8 +118,8 @@ class Piece {
 }
 
 /* -----------------------
-   충돌
-   ----------------------- */
+   충돌: broad-phase(원) + narrow-phase(픽셀 마스크)
+----------------------- */
 function circleTest(a,b){
   const dx = a.x - b.x, dy = a.y - b.y;
   const dist2 = dx*dx + dy*dy;
@@ -143,7 +148,7 @@ function pixelOverlap(a,b){
 
 /* -----------------------
    fight 규칙
-   ----------------------- */
+----------------------- */
 function fight(a,b){
   if(a.kind === b.kind) return;
   const aWins = (a.kind === "가위" && b.kind === "보") ||
@@ -156,7 +161,7 @@ function fight(a,b){
 
 /* -----------------------
    리소스 로드 및 초기화
-   ----------------------- */
+----------------------- */
 async function init(){
   const loaded = {};
   for(const k of Object.keys(IMAGE_FILES)){
@@ -167,18 +172,20 @@ async function init(){
     IMAGES_CANVAS[k] = tinted;
     MASKS[k] = makeMask(tinted);
   }
+
   const pieces = [];
   for(const kind of Object.keys(INITIAL_COUNT)){
     for(let i=0;i<INITIAL_COUNT[kind];i++){
       pieces.push(new Piece(kind));
     }
   }
+
   return pieces;
 }
 
 /* -----------------------
    메인 루프
-   ----------------------- */
+----------------------- */
 let pieces = [];
 let running = true;
 let winnerDisplayed = false;
@@ -206,18 +213,27 @@ init().then(res => {
   ctx.fillText('이미지 로드 실패: 콘솔 확인', 20, 20);
 });
 
+/* -----------------------
+   update / render
+----------------------- */
 function update(){
   for(const p of pieces) p.move();
+
   const n = pieces.length;
   for(let i=0;i<n;i++){
     for(let j=i+1;j<n;j++){
       const a = pieces[i], b = pieces[j];
       if(!circleTest(a,b)) continue;
-      if(pixelOverlap(a,b)) fight(a,b);
+      if(pixelOverlap(a,b)){
+        fight(a,b);
+      }
     }
   }
+
   const kinds = new Set(pieces.map(p=>p.kind));
-  if(kinds.size === 1 && !winnerDisplayed) showWinner([...kinds][0]);
+  if(kinds.size === 1 && !winnerDisplayed){
+    showWinner([...kinds][0]);
+  }
 }
 
 function render(){
@@ -227,13 +243,17 @@ function render(){
 }
 
 /* -----------------------
-   승리 표시 + 다시하기 버튼
-   ----------------------- */
+   Winner overlay + 중앙 버튼
+----------------------- */
 function showWinner(kind){
   winnerDisplayed = true;
   running = false;
+
+  // 반투명 오버레이
   ctx.fillStyle = `rgba(0,0,0,0.25)`;
   ctx.fillRect(0,0,WIDTH,HEIGHT);
+
+  // 승리 메시지
   const msg = `${kind} 우승!`;
   ctx.font = 'bold 60px "Malgun Gothic","Apple SD Gothic Neo","Nanum Gothic", sans-serif';
   ctx.textAlign = 'center';
@@ -245,13 +265,11 @@ function showWinner(kind){
   ctx.fillText(msg, WIDTH/2, HEIGHT/2);
 
   // 버튼 표시
-  document.getElementById('winnerContainer').style.display = 'block';
+  document.getElementById('winnerBtn').style.display = 'block';
 }
 
 // 버튼 클릭 이벤트
-document.getElementById('restartBtn').addEventListener('click', ()=>{
+document.getElementById('winnerBtn').addEventListener('click', ()=>{
   location.reload();
 });
-</script>
-</body>
-</html>
+</
